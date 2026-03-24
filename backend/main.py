@@ -6,8 +6,9 @@ import os
 
 app = FastAPI()
 GITHUB_TOKEN = os.getenv("TOKEN")
-GITHUB_USER = os.getenv("USER")
+GITHUB_USER = os.getenv("GITHUB_USER")
 print("TOKEN:", GITHUB_TOKEN)
+print("GITHUB_USER", GITHUB_USER)
 
 # -------------------------------
 # 📦 CREAR REPOSITORIO
