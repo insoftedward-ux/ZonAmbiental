@@ -2,9 +2,11 @@ from fastapi import FastAPI, UploadFile, File, Form
 from typing import List
 import requests
 import base64
-from config import GITHUB_TOKEN, GITHUB_USER
+import os
 
 app = FastAPI()
+GITHUB_TOKEN = os.getenv("TOKEN")
+GITHUB_USER = os.getenv("USER")
 
 # -------------------------------
 # 📦 CREAR REPOSITORIO
