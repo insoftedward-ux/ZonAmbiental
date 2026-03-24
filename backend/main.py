@@ -3,8 +3,13 @@ from typing import List
 import requests
 import base64
 import os
+from fastapi import FastAPI
 
 app = FastAPI()
+@app.get("/")
+def home():
+    return {"status": "API funcionando"}
+    
 GITHUB_TOKEN = os.getenv("TOKEN")
 GITHUB_USER = os.getenv("GITHUB_USER")
 print("TOKEN:", GITHUB_TOKEN)
