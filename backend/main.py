@@ -2,10 +2,10 @@ from fastapi import FastAPI, UploadFile, File, Form
 from typing import List
 import requests
 import base64
-from config import GITHUB_TOKEN, GITHUB_USER
 
 app = FastAPI()
-
+GITHUB_TOKEN = "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"
+GITHUB_USER = "insoftedward-ux"
 # -------------------------------
 # 📦 CREAR REPOSITORIO
 # -------------------------------
