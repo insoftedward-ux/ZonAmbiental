@@ -27,12 +27,10 @@ def create_project(data: dict):
     }
     payload = {
         "name": name,
-        "auto_init": True
+        "auto_init": False
     }
-    r = requests.post(url, json=payload, headers=headers)
-    if r.status_code != 201:
-        return {"error": r.json()}
-    return {"repo": name}
+    response = requests.post(url, json=payload, headers=headers)
+    return response.json()
 
 # -------------------------------
 # ☁️ SUBIR ARCHIVO A GITHUB
