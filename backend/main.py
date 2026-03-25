@@ -15,6 +15,19 @@ GITHUB_USER = os.getenv("GITHUB_USER")
 print("TOKEN:", GITHUB_TOKEN)
 print("GITHUB_USER", GITHUB_USER)
 
+@app.get("/repos")
+def get_repos():
+    url = f"https://api.github.com/user/repos"
+
+    headers = {
+        "Authorization": f"token {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github+json"
+    }
+
+    response = requests.get(url, headers=headers)
+
+    return response.json()
+
 # -------------------------------
 # 📦 CREAR REPOSITORIO
 # -------------------------------
