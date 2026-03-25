@@ -31,19 +31,29 @@ def get_repos():
 # -------------------------------
 # 📦 CREAR REPOSITORIO
 # -------------------------------
-@app.post("/project")
-def create_project(data: dict):
-    name = data.get("name")
+@app.post("/create_repo")
+def create_repo(data: dict):
+    repo_name = data.get("name")
+
     url = "https://api.github.com/user/repos"
+
     headers = {
-        "Authorization": f"token {GITHUB_TOKEN}"
+        "Authorization": f"token {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github+json"
     }
+
     payload = {
-        "name": name,
-        "auto_init": False
+        "name": repo_name,
+        "private": False,
+        "auto_init": True   # 🔥 IMPORTANTE
     }
+
     response = requests.post(url, json=payload, headers=headers)
-    return response.json()
+
+    return {
+        "status": response.status_code,
+        "response": response.json()
+    }
 
 # -------------------------------
 # ☁️ SUBIR ARCHIVO A GITHUB
