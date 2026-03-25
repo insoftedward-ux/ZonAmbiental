@@ -31,10 +31,12 @@ def home():
 @app.get("/repos")
 def get_repos():
     url = "https://api.github.com/user/repos"
-
     response = requests.get(url, headers=HEADERS)
-
-    return response.json()
+    repos = []
+    if response.status_code == 200:
+        for repo in response.json():
+            repos.append(repo["name"])
+    return repos
 
 # ============================
 # ➕ CREAR REPOSITORIO
