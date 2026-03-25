@@ -75,9 +75,14 @@ async def create_tree(
     images: List[UploadFile] = File(...)
 ):
 
-    base_path = f"{vertice}"
+    print("==== NUEVO ÁRBOL ====")
+    print("USER:", GITHUB_USER)
+    print("PROJECT:", project)
+    print("VERTICE:", vertice)
 
-    # 📄 JSON DEL ÁRBOL
+    base_path = vertice
+
+    # 🔥 1. CREAR JSON (ESTO CREA LA CARPETA)
     data = {
         "vertice": vertice,
         "nombreComun": nombreComun,
@@ -87,36 +92,50 @@ async def create_tree(
         "dap": dap
     }
 
-    json_content = base64.b64encode(
-        json.dumps(data, indent=2).encode()
-    ).decode()
+    json_bytes = json.dumps(data, indent=2).encode("utf-8")
+    json_base64 = base64.b64encode(json_bytes).decode("utf-8")
 
     json_url = f"https://api.github.com/repos/{GITHUB_USER}/{project}/contents/{base_path}/data.json"
 
     res_json = requests.put(json_url, headers=HEADERS, json={
-        "message": f"Add data {vertice}",
-        "content": json_content
+        "message": f"create tree {vertice}",
+        "content": json_base64
     })
 
-    print("JSON STATUS:", res_json.status_code, res_json.text)
+    print("JSON STATUS:", res_json.status_code)
+    print("JSON RESP:", res_json.text)
 
-    # 📸 SUBIR IMÁGENES
+    if res_json.status_code not in [200, 201]:
+        return {
+            "error": "Error creando JSON",
+            "detail": res_json.text
+        }
+
+    # 🔥 2. SUBIR IMÁGENES
     for i, img in enumerate(images):
+        try:
+            content = await img.read()
 
-        content = await img.read()
+            if not content:
+                print("Imagen vacía:", img.filename)
+                continue
 
-        encoded = base64.b64encode(content).decode()
+            filename = f"img_{i+1}.jpg"
 
-        filename = f"img_{i+1}.jpg"  # 🔥 evita nombres repetidos
+            file_url = f"https://api.github.com/repos/{GITHUB_USER}/{project}/contents/{base_path}/{filename}"
 
-        file_url = f"https://api.github.com/repos/{GITHUB_USER}/{project}/contents/{base_path}/{filename}"
+            encoded = base64.b64encode(content).decode("utf-8")
 
-        res_img = requests.put(file_url, headers=HEADERS, json={
-            "message": f"Add image {filename}",
-            "content": encoded
-        })
+            res_img = requests.put(file_url, headers=HEADERS, json={
+                "message": f"upload {filename}",
+                "content": encoded
+            })
 
-        print("IMG STATUS:", res_img.status_code, res_img.text)
+            print(f"IMG {filename}:", res_img.status_code)
+            print(res_img.text)
+
+        except Exception as e:
+            print("ERROR IMAGEN:", str(e))
 
     return {"status": "ok"}
 
