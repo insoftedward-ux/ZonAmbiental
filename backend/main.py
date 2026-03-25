@@ -80,6 +80,8 @@ async def create_tree(
     print("PROJECT:", project)
     print("VERTICE:", vertice)
 
+    project = project.replace('"', '').strip()
+    vertice = vertice.replace('"', '').strip()
     base_path = vertice
 
     # 🔥 1. CREAR JSON (ESTO CREA LA CARPETA)
