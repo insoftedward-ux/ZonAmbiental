@@ -174,5 +174,9 @@ def get_tree(project: str, vertice: str):
 
         return json.loads(decoded)
 
-    except Exception as e:
-        return {"error": str(e)}
+    clean_data = {}
+
+    for key, value in data.items():
+        clean_data[key] = str(value).replace('"', '').strip()
+
+    return clean_data
