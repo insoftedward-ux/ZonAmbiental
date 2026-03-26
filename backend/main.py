@@ -150,18 +150,20 @@ def get_trees(project: str):
 
 @app.get("/tree/{project}/{vertice}")
 def get_tree(project: str, vertice: str):
-
-    url = f"https://api.github.com/repos/{GITHUB_USER}/{project}/contents/{vertice}/data.json"
-
-    r = requests.get(url, headers=HEADERS)
-
-    if r.status_code != 200:
-        return {}
-
-    content = r.json()["content"]
-    decoded = base64.b64decode(content).decode()
-
-    return json.loads(decoded)
+    base_url = f"https://api.github.com/repos/{GITHUB_USER}/{project}/contents/{vertice}"
+    r = requests.get(base_url, headers=HEADERS)
+    files = r.json()
+    data = {}
+    images = []
+    
+    for file in files:
+        if file["name"] == "data.json":
+            content = base64.b64decode(file["content"]).decode()
+            data = json.loads(content)
+        elif file["name"].endswith(".jpg") or file["name"].endswith(".png"):
+            images.append(file["download_url"])
+    data["images"] = images
+    return data
 
 
 # =========================================
