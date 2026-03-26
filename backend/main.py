@@ -180,3 +180,6 @@ def get_tree(project: str, vertice: str):
         clean_data[key] = str(value).replace('"', '').strip()
 
     return clean_data
+
+    except Exception as e:
+         return {"error": str(e)}
