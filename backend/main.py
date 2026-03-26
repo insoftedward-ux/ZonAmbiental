@@ -1,100 +1,50 @@
 import os
-import requests
-import base64
 import json
-
+import base64
+import requests
 from fastapi import FastAPI, UploadFile, File, Form
 from typing import List
 
 app = FastAPI()
 
-# 🔐 VARIABLES DE ENTORNO
-GITHUB_TOKEN = os.getenv("TOKEN")
+# 🔐 VARIABLES DE ENTORNO (Render)
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 GITHUB_USER = os.getenv("GITHUB_USER")
 
-HEADERS = {
+headers = {
     "Authorization": f"token {GITHUB_TOKEN}",
     "Accept": "application/vnd.github+json"
 }
 
-# 🌐 ROOT
-@app.get("/")
-def root():
-    return {"status": "Backend activo"}
-
-# 📁 LISTAR REPOS
+# 🔥 1. LISTAR REPOSITORIOS
 @app.get("/repos")
 def get_repos():
-    url = "https://api.github.com/user/repos"
-    response = requests.get(url, headers=HEADERS)
+    url = f"https://api.github.com/user/repos"
+    resp = requests.get(url, headers=headers)
 
-    repos = []
-    if response.status_code == 200:
-        for repo in response.json():
-            repos.append(repo["name"])
+    if resp.status_code != 200:
+        return []
 
+    repos = [repo["name"] for repo in resp.json()]
     return repos
 
-# 🆕 CREAR REPO
+
+# 🔥 2. CREAR REPOSITORIO
 @app.post("/create_repo")
-def create_repo(data: dict):
-    name = data.get("name")
+def create_repo(body: dict):
+    repo_name = body.get("name")
 
     url = "https://api.github.com/user/repos"
 
-    response = requests.post(url, headers=HEADERS, json={
-        "name": name,
+    resp = requests.post(url, headers=headers, json={
+        "name": repo_name,
         "private": False
     })
 
-    return response.json()
+    return {"status": resp.status_code, "response": resp.json()}
 
-# 🌳 LISTAR ÁRBOLES (CARPETAS)
-@app.get("/trees/{project}")
-def get_trees(project: str):
 
-    project = project.replace('"', '').strip()
-
-    url = f"https://api.github.com/repos/{GITHUB_USER}/{project}/contents/"
-
-    response = requests.get(url, headers=HEADERS)
-
-    trees = []
-
-    if response.status_code == 200:
-        for item in response.json():
-            if item.get("type") == "dir":
-                trees.append(item.get("name"))
-
-    return trees
-
-# 🌲 OBTENER FICHA DE ÁRBOL
-@app.get("/tree/{project}/{vertice}")
-def get_tree(project: str, vertice: str):
-
-    project = project.replace('"', '').strip()
-    vertice = vertice.replace('"', '').strip()
-
-    url = f"https://api.github.com/repos/{GITHUB_USER}/{project}/contents/{vertice}/data.json"
-
-    response = requests.get(url, headers=HEADERS)
-
-    if response.status_code != 200:
-        return {"error": "No encontrado"}
-
-    content = response.json().get("content", "")
-    decoded = base64.b64decode(content).decode("utf-8")
-
-    data = json.loads(decoded)
-
-    # 🔥 LIMPIAR COMILLAS EXTRA
-    clean_data = {}
-    for key, value in data.items():
-        clean_data[key] = str(value).replace('"', '').strip()
-
-    return clean_data
-
-# 📸 CREAR ÁRBOL + SUBIR IMÁGENES
+# 🔥 3. CREAR / ACTUALIZAR ÁRBOL
 @app.post("/tree")
 async def create_tree(
     project: str = Form(...),
@@ -104,22 +54,18 @@ async def create_tree(
     altura: str = Form(...),
     copa: str = Form(...),
     dap: str = Form(...),
-    images: List[UploadFile] = File(...)
+    images: List[UploadFile] = File([])
 ):
-
-    project = project.replace('"', '').strip()
-    vertice = vertice.replace('"', '').strip()
-
     base_path = f"{vertice}"
 
-    # 📄 JSON limpio
+    # 📄 JSON del árbol
     data = {
         "vertice": vertice,
-        "nombreComun": nombreComun.replace('"', ''),
-        "nombreCientifico": nombreCientifico.replace('"', ''),
-        "altura": altura.replace('"', ''),
-        "copa": copa.replace('"', ''),
-        "dap": dap.replace('"', '')
+        "nombreComun": nombreComun,
+        "nombreCientifico": nombreCientifico,
+        "altura": altura,
+        "copa": copa,
+        "dap": dap
     }
 
     json_content = base64.b64encode(
@@ -128,9 +74,16 @@ async def create_tree(
 
     json_url = f"https://api.github.com/repos/{GITHUB_USER}/{project}/contents/{base_path}/data.json"
 
-    requests.put(json_url, headers=HEADERS, json={
-        "message": f"Add data {vertice}",
-        "content": json_content
+    # 🔍 verificar si existe (para update)
+    sha = None
+    check = requests.get(json_url, headers=headers)
+    if check.status_code == 200:
+        sha = check.json().get("sha")
+
+    requests.put(json_url, headers=headers, json={
+        "message": f"Add/Update data {vertice}",
+        "content": json_content,
+        "sha": sha
     })
 
     # 📸 SUBIR IMÁGENES
@@ -140,37 +93,84 @@ async def create_tree(
 
         file_url = f"https://api.github.com/repos/{GITHUB_USER}/{project}/contents/{base_path}/{img.filename}"
 
-        requests.put(file_url, headers=HEADERS, json={
+        sha_img = None
+        check_img = requests.get(file_url, headers=headers)
+        if check_img.status_code == 200:
+            sha_img = check_img.json().get("sha")
+
+        requests.put(file_url, headers=headers, json={
             "message": f"Add image {img.filename}",
-            "content": encoded
+            "content": encoded,
+            "sha": sha_img
         })
 
     return {"status": "ok"}
 
-# 🗑️ ELIMINAR ÁRBOL COMPLETO
-@app.delete("/tree/{project}/{vertice}")
-def delete_tree(project: str, vertice: str):
 
-    project = project.replace('"', '').strip()
-    vertice = vertice.replace('"', '').strip()
+# 🔥 4. LISTAR ÁRBOLES
+@app.get("/trees/{project}")
+def get_trees(project: str):
+    url = f"https://api.github.com/repos/{GITHUB_USER}/{project}/contents"
+    resp = requests.get(url, headers=headers)
 
-    base_url = f"https://api.github.com/repos/{GITHUB_USER}/{project}/contents/{vertice}"
+    if resp.status_code != 200:
+        return []
 
-    # 1️⃣ Obtener contenido de la carpeta
-    response = requests.get(base_url, headers=HEADERS)
+    trees = [item["name"] for item in resp.json() if item["type"] == "dir"]
+    return trees
 
-    if response.status_code != 200:
+
+# 🔥 5. OBTENER DETALLE DE ÁRBOL + IMÁGENES
+@app.get("/tree/{project}/{vertice}")
+def get_tree(project: str, vertice: str):
+    base_path = f"{vertice}"
+
+    # 📄 JSON
+    json_url = f"https://api.github.com/repos/{GITHUB_USER}/{project}/contents/{base_path}/data.json"
+    resp = requests.get(json_url, headers=headers)
+
+    if resp.status_code != 200:
         return {"error": "No encontrado"}
 
-    files = response.json()
+    content = resp.json()["content"]
+    decoded = base64.b64decode(content).decode()
+    data = json.loads(decoded)
 
-    # 2️⃣ Eliminar cada archivo
-    for file in files:
+    # 📸 LISTAR IMÁGENES
+    files_url = f"https://api.github.com/repos/{GITHUB_USER}/{project}/contents/{base_path}"
+    files_resp = requests.get(files_url, headers=headers)
+
+    images = []
+
+    if files_resp.status_code == 200:
+        for file in files_resp.json():
+            if file["name"].lower().endswith((".jpg", ".jpeg", ".png")):
+                images.append(file["download_url"])
+
+    return {
+        **data,
+        "images": images
+    }
+
+
+# 🔥 6. ELIMINAR ÁRBOL
+@app.delete("/tree/{project}/{vertice}")
+def delete_tree(project: str, vertice: str):
+    base_path = f"{vertice}"
+
+    files_url = f"https://api.github.com/repos/{GITHUB_USER}/{project}/contents/{base_path}"
+    resp = requests.get(files_url, headers=headers)
+
+    if resp.status_code != 200:
+        return {"error": "No encontrado"}
+
+    for file in resp.json():
         delete_url = file["url"]
+        sha = file["sha"]
 
-        requests.delete(delete_url, headers=HEADERS, json={
+        requests.delete(delete_url, headers=headers, json={
             "message": f"Delete {file['name']}",
-            "sha": file["sha"]
+            "sha": sha
         })
 
     return {"status": "deleted"}
