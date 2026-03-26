@@ -147,18 +147,32 @@ async def create_tree(
 # 🌲 LISTAR ÁRBOLES
 # ============================
 
-@app.get("/trees/{project}")
-def get_trees(project: str):
+@app.get("/tree/{project}/{vertice}")
+def get_tree(project: str, vertice: str):
 
-    url = f"https://api.github.com/repos/{GITHUB_USER}/{project}/contents/"
+    project = project.replace('"', '').strip()
+    vertice = vertice.replace('"', '').strip()
+
+    url = f"https://api.github.com/repos/{GITHUB_USER}/{project}/contents/{vertice}/data.json"
 
     response = requests.get(url, headers=HEADERS)
 
-    trees = []
+    print("URL:", url)
+    print("STATUS:", response.status_code)
+    print("RESP:", response.text)
 
-    if response.status_code == 200:
-        for item in response.json():
-            if item["type"] == "dir":
-                trees.append(item["name"])
+    if response.status_code != 200:
+        return {"error": "No encontrado"}
 
-    return trees
+    try:
+        content = response.json().get("content", "")
+
+        if not content:
+            return {"error": "Archivo vacío"}
+
+        decoded = base64.b64decode(content).decode("utf-8")
+
+        return json.loads(decoded)
+
+    except Exception as e:
+        return {"error": str(e)}
