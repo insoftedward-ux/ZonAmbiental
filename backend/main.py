@@ -149,21 +149,24 @@ def get_trees(project: str):
 # =========================================
 
 @app.get("/tree/{project}/{vertice}")
-def get_tree(project: str, vertice: str):
-    base_url = f"https://api.github.com/repos/{GITHUB_USER}/{project}/contents/{vertice}"
-    r = requests.get(base_url, headers=HEADERS)
-    files = r.json()
-    data = {}
-    images = []
-    
-    for file in files:
-        if file["name"] == "data.json":
-            content = base64.b64decode(file["content"]).decode()
-            data = json.loads(content)
-        elif file["name"].endswith(".jpg") or file["name"].endswith(".png"):
-            images.append(file["download_url"])
-    data["images"] = images
-    return data
+def get_tree(project, vertice):
+
+    url = f"https://api.github.com/repos/TU_USUARIO/{project}/contents/{vertice}/data.json"
+
+    response = requests.get(url)
+
+    if response.status_code != 200:
+        return {"error": "No encontrado"}
+
+    file = response.json()
+
+    # 🔥 VALIDACIÓN CLAVE
+    if "content" not in file:
+        return {"error": "Archivo sin contenido", "raw": file}
+
+    content = base64.b64decode(file["content"]).decode()
+
+    return json.loads(content)
 
 
 # =========================================
