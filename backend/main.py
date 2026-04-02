@@ -99,7 +99,13 @@ async def create_tree(
         "status": "ok",
         "images": image_urls
     }
+    
+from github_service import list_repos
 
+@app.get("/repos")
+def get_repos():
+    repos = list_repos()
+    return repos
 
 # =========================
 # 🧪 TEST
