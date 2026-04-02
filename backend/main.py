@@ -1,5 +1,5 @@
 from fastapi import FastAPI, UploadFile, File, Form
-from typing import List
+from typing import Optional
 import json
 
 from github_service import (
@@ -70,7 +70,7 @@ def get_trees(project: str):
 async def create_tree(
     project: str = Form(...),
     data: str = Form(...),
-    files: List[UploadFile] = File(...)
+    files: Optional[List[UploadFile]] = File(None)
 ):
     tree = json.loads(data)
     vertice = tree["vertice"]
