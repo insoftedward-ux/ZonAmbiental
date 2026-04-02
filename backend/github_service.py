@@ -146,6 +146,21 @@ def create_repo(repo_name):
 
     if r.status_code == 201:
         # Crear index automáticamente
+
+    def list_repos():
+    url = f"{BASE_API}/user/repos"
+
+    r = requests.get(url, headers=headers)
+
+    print("LIST REPOS:", r.status_code, r.text)
+
+    if r.status_code != 200:
+        return []
+
+    repos = r.json()
+
+    # Solo nombres
+    return [repo["name"] for repo in repos]
         create_index_file(repo_name)
         return True
 
