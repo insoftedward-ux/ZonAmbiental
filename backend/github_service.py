@@ -98,7 +98,20 @@ def update_file(repo, path, content_bytes, message="update file"):
 # =========================
 # 📂 INDEX
 # =========================
+def create_repo(repo_name):
+    url = f"{BASE_API}/user/repos"
 
+    data = {
+        "name": repo_name,
+        "private": False
+    }
+
+    r = requests.post(url, headers=headers, json=data)
+
+    print("CREATE REPO:", r.status_code, r.text)
+
+    return r.status_code == 201
+    
 def get_index(repo):
     index = get_raw_json(repo, "index.json")
     return index if index else []
