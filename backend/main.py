@@ -1,6 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, Form
 from typing import List, Optional
 import json
+import os
 
 from github_service import (
     create_repo,
@@ -12,6 +13,10 @@ from github_service import (
 
 app = FastAPI()
 
+# 🔧 CONFIG
+GITHUB_USER = os.getenv("GITHUB_USER")
+BRANCH = os.getenv("BRANCH", "main")
+
 
 # 🌍 ROOT
 @app.get("/")
@@ -19,13 +24,13 @@ def root():
     return {"msg": "API funcionando correctamente"}
 
 
-# 📁 LISTAR REPOSITORIOS
+# 📁 LISTAR REPOS
 @app.get("/repos")
 def get_repos():
     return list_repos()
 
 
-# 🆕 CREAR REPOSITORIO + index.json
+# 🆕 CREAR REPO + index.json
 @app.post("/create_repo")
 def create_new_repo(repo_name: str):
 
@@ -34,27 +39,20 @@ def create_new_repo(repo_name: str):
     if not success:
         return {"error": "No se pudo crear repo"}
 
-    # Crear index.json automáticamente
+    # Crear index.json vacío
     index_content = json.dumps([])
 
-if get_file(project, f"{vertice}/data.json"):
-    update_file(
-        project,
-        f"{vertice}/data.json",
-        json.dumps(tree_data, indent=2).encode(),
-        "update tree"
-    )
-else:
     upload_file(
-        project,
-        f"{vertice}/data.json",
-        json.dumps(tree_data, indent=2).encode(),
-        "create tree"
+        repo_name,
+        "index.json",
+        index_content.encode(),
+        "init index"
     )
+
     return {"msg": f"Repo {repo_name} creado"}
 
 
-# 🌳 CREAR ÁRBOL
+# 🌳 CREAR / ACTUALIZAR ÁRBOL
 @app.post("/tree")
 async def create_tree(
     project: str = Form(...),
@@ -62,17 +60,18 @@ async def create_tree(
     files: Optional[List[UploadFile]] = File(None)
 ):
 
+    # 🔐 Parse JSON
     try:
         tree_data = json.loads(data)
-    except:
-        return {"error": "JSON inválido"}
+    except Exception as e:
+        return {"error": "JSON inválido", "detail": str(e)}
 
     vertice = tree_data.get("vertice")
 
     if not vertice:
         return {"error": "Falta vertice"}
 
-    # 📷 Subir imágenes
+    # 📷 SUBIR IMÁGENES
     image_urls = []
 
     if files:
@@ -83,20 +82,32 @@ async def create_tree(
             success = upload_file(project, filename, content, "upload image")
 
             if success:
-                url = f"https://raw.githubusercontent.com/{project_owner}/{project}/main/{filename}"
+                url = f"https://raw.githubusercontent.com/{GITHUB_USER}/{project}/{BRANCH}/{filename}"
                 image_urls.append(url)
 
-    # 📦 Guardar data.json
+    # 📦 GUARDAR DATA.JSON
     tree_data["images"] = image_urls
 
-    upload_file(
-        project,
-        f"{vertice}/data.json",
-        json.dumps(tree_data, indent=2).encode(),
-        "tree data"
-    )
+    path_data = f"{vertice}/data.json"
 
-    # 📄 ACTUALIZAR index.json
+    existing = get_file(project, path_data)
+
+    if existing:
+        update_file(
+            project,
+            path_data,
+            json.dumps(tree_data, indent=2).encode(),
+            "update tree"
+        )
+    else:
+        upload_file(
+            project,
+            path_data,
+            json.dumps(tree_data, indent=2).encode(),
+            "create tree"
+        )
+
+    # 📄 ACTUALIZAR INDEX.JSON
     index = get_file(project, "index.json")
 
     if index is None:
@@ -105,14 +116,17 @@ async def create_tree(
     if vertice not in index:
         index.append(vertice)
 
-    update_file(
-        project,
-        "index.json",
-        json.dumps(index, indent=2).encode(),
-        "update index"
-    )
+        update_file(
+            project,
+            "index.json",
+            json.dumps(index, indent=2).encode(),
+            "update index"
+        )
 
-    return {"msg": "Tree creado correctamente"}
+    return {
+        "msg": "Tree guardado correctamente",
+        "images": image_urls
+    }
 
 
 # 🌳 LISTAR ÁRBOLES
@@ -128,6 +142,7 @@ def get_trees(project: str):
 
     for vertice in index:
         data = get_file(project, f"{vertice}/data.json")
+
         if data:
             result.append(data)
 
@@ -146,9 +161,7 @@ def get_tree(project: str, vertice: str):
     return data
 
 
-# 🗑️ ELIMINAR ÁRBOL (BÁSICO)
+# 🗑️ ELIMINAR (pendiente)
 @app.delete("/tree/{project}/{vertice}")
 def delete_tree(project: str, vertice: str):
-
-    # ⚠️ Esto requiere implementar delete en github_service
     return {"msg": "Eliminar aún no implementado"}
