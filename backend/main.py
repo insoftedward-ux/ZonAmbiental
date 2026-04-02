@@ -37,7 +37,7 @@ def create_new_repo(repo_name: str):
     # Crear index.json automáticamente
     index_content = json.dumps([])
 
-    if get_file(project, f"{vertice}/data.json"):
+if get_file(project, f"{vertice}/data.json"):
     update_file(
         project,
         f"{vertice}/data.json",
