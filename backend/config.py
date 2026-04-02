@@ -1,5 +1,8 @@
-GITHUB_USER = "insoftedward-ux"
-GITHUB_TOKEN = "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"
-BRANCH = "main"
+import os
+
+GITHUB_USER = os.getenv("GITHUB_USER")
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+BRANCH = os.getenv("BRANCH", "main")
+
 BASE_API = "https://api.github.com"
 BASE_RAW = "https://raw.githubusercontent.com"
