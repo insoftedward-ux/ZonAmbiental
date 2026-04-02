@@ -1,6 +1,7 @@
 import requests
 import base64
 import json
+import time
 from config import GITHUB_USER, GITHUB_TOKEN, BRANCH, BASE_API, BASE_RAW
 
 headers = {
@@ -27,17 +28,6 @@ def get_raw_json(repo, path):
 
     return r.json()
 
-def get_raw_file(repo, path):
-    url = build_raw_url(repo, path)
-    print("GET FILE:", url)
-
-    r = requests.get(url)
-
-    if r.status_code != 200:
-        return None
-
-    return r.content
-
 
 # =========================
 # 🔼 GITHUB API (ESCRITURA)
@@ -58,7 +48,7 @@ def upload_file(repo, path, content_bytes, message="upload file"):
 
     print("UPLOAD:", r.status_code, r.text)
 
-    return r.status_code == 201 or r.status_code == 200
+    return r.status_code in [200, 201]
 
 
 def get_file_sha(repo, path):
@@ -98,6 +88,50 @@ def update_file(repo, path, content_bytes, message="update file"):
 # =========================
 # 📂 INDEX
 # =========================
+
+def get_index(repo):
+    index = get_raw_json(repo, "index.json")
+
+    if index is None:
+        print("⚠ index.json no existe, creando automáticamente...")
+        create_index_file(repo)
+        return []
+
+    return index
+
+
+def update_index(repo, vertice):
+    index = get_index(repo)
+
+    if vertice not in index:
+        index.append(vertice)
+
+    content = json.dumps(index, indent=2).encode("utf-8")
+
+    return update_file(repo, "index.json", content, "update index")
+
+
+def create_index_file(repo):
+    content = "[]".encode("utf-8")
+
+    for i in range(5):
+        success = upload_file(repo, "index.json", content, "init index")
+
+        if success:
+            print("✅ index.json creado")
+            return True
+
+        print(f"Reintentando crear index... {i+1}")
+        time.sleep(2)
+
+    print("❌ No se pudo crear index.json")
+    return False
+
+
+# =========================
+# 📦 CREAR REPO
+# =========================
+
 def create_repo(repo_name):
     url = f"{BASE_API}/user/repos"
 
@@ -110,19 +144,9 @@ def create_repo(repo_name):
 
     print("CREATE REPO:", r.status_code, r.text)
 
-    return r.status_code == 201
-    
-def get_index(repo):
-    index = get_raw_json(repo, "index.json")
-    return index if index else []
+    if r.status_code == 201:
+        # Crear index automáticamente
+        create_index_file(repo_name)
+        return True
 
-
-def update_index(repo, vertice):
-    index = get_index(repo)
-
-    if vertice not in index:
-        index.append(vertice)
-
-    content = json.dumps(index, indent=2).encode("utf-8")
-
-    return update_file(repo, "index.json", content, "update index")
+    return False
