@@ -146,7 +146,11 @@ def create_repo(repo_name):
 
     if r.status_code == 201:
         # Crear index automáticamente
+        create_index_file(repo_name)
+        return True
 
+    return False
+    
     def list_repos():
     url = f"{BASE_API}/user/repos"
 
@@ -161,7 +165,3 @@ def create_repo(repo_name):
 
     # Solo nombres
     return [repo["name"] for repo in repos]
-        create_index_file(repo_name)
-        return True
-
-    return False
