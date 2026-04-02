@@ -151,17 +151,9 @@ def create_repo(repo_name):
 
     return False
     
-    def list_repos():
-    url = f"{BASE_API}/user/repos"
-
+def list_repos():
+    url = f"{BASE_API}/user/repos?per_page=100"
     r = requests.get(url, headers=headers)
-
-    print("LIST REPOS:", r.status_code, r.text)
-
     if r.status_code != 200:
         return []
-
-    repos = r.json()
-
-    # Solo nombres
-    return [repo["name"] for repo in repos]
+    return [repo["name"] for repo in r.json()]
