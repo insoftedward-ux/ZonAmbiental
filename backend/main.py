@@ -7,10 +7,28 @@ from github_service import (
     upload_file,
     update_index,
     build_raw_url,
-    get_index
+    get_index,
+    create_repo
 )
 
 app = FastAPI()
+
+# =========================
+# 📦 CREAR REPO
+# =========================
+
+@app.post("/create_repo")
+def create_repository(repo_name: str):
+    success = create_repo(repo_name)
+
+    if not success:
+        return {"error": "No se pudo crear repo"}
+
+    return {
+        "status": "ok",
+        "repo": repo_name
+    }
+
 
 # =========================
 # 🌳 GET TREE
@@ -18,8 +36,7 @@ app = FastAPI()
 
 @app.get("/tree/{project}/{vertice}")
 def get_tree(project: str, vertice: str):
-    path = f"{vertice}/data.json"
-    data = get_raw_json(project, path)
+    data = get_raw_json(project, f"{vertice}/data.json")
 
     if not data:
         return {"error": "No encontrado"}
@@ -46,7 +63,7 @@ def get_trees(project: str):
 
 
 # =========================
-# 🌳 CREATE TREE + IMAGES
+# 🌳 CREATE TREE + IMÁGENES
 # =========================
 
 @app.post("/tree")
@@ -60,7 +77,6 @@ async def create_tree(
 
     image_urls = []
 
-    # 📷 Subir imágenes
     for i, file in enumerate(files):
         content = await file.read()
         filename = f"{vertice}/img{i}.jpg"
@@ -71,23 +87,24 @@ async def create_tree(
             url = build_raw_url(project, filename)
             image_urls.append(url)
 
-    # 🔗 Guardar URLs en JSON
     tree["images"] = image_urls
 
     json_bytes = json.dumps(tree, indent=2).encode("utf-8")
 
     upload_file(project, f"{vertice}/data.json", json_bytes, "create tree")
 
-    # 📂 Actualizar index
     update_index(project, vertice)
 
-    return {"status": "ok", "images": image_urls}
+    return {
+        "status": "ok",
+        "images": image_urls
+    }
 
 
 # =========================
-# ❌ DELETE TREE (BÁSICO)
+# 🧪 TEST
 # =========================
 
-@app.delete("/tree/{project}/{vertice}")
-def delete_tree(project: str, vertice: str):
-    return {"msg": "Implementar delete con SHA si lo necesitas"}
+@app.get("/")
+def root():
+    return {"msg": "API funcionando"}
