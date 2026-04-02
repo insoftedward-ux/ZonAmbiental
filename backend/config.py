@@ -1,0 +1,5 @@
+GITHUB_USER = "insoftedward-ux"
+GITHUB_TOKEN = "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"
+BRANCH = "main"
+BASE_API = "https://api.github.com"
+BASE_RAW = "https://raw.githubusercontent.com"
