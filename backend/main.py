@@ -76,17 +76,16 @@ async def create_tree(
     vertice = tree["vertice"]
 
     image_urls = []
-
+    
+    if files:
     for i, file in enumerate(files):
         content = await file.read()
         filename = f"{vertice}/img{i}.jpg"
-
         success = upload_file(project, filename, content, "upload image")
-
         if success:
             url = build_raw_url(project, filename)
             image_urls.append(url)
-
+    
     tree["images"] = image_urls
 
     json_bytes = json.dumps(tree, indent=2).encode("utf-8")
