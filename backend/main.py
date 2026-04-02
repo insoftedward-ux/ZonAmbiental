@@ -44,15 +44,14 @@ if get_file(project, f"{vertice}/data.json"):
         json.dumps(tree_data, indent=2).encode(),
         "update tree"
     )
-    else:
+else:
     upload_file(
         project,
         f"{vertice}/data.json",
         json.dumps(tree_data, indent=2).encode(),
         "create tree"
     )
-
-    return {"msg": f"Repo {repo_name} creado"}
+return {"msg": f"Repo {repo_name} creado"}
 
 
 # 🌳 CREAR ÁRBOL
