@@ -37,11 +37,19 @@ def create_new_repo(repo_name: str):
     # Crear index.json automáticamente
     index_content = json.dumps([])
 
+    if get_file(project, f"{vertice}/data.json"):
+    update_file(
+        project,
+        f"{vertice}/data.json",
+        json.dumps(tree_data, indent=2).encode(),
+        "update tree"
+    )
+    else:
     upload_file(
-        repo_name,
-        "index.json",
-        index_content.encode(),
-        "init index"
+        project,
+        f"{vertice}/data.json",
+        json.dumps(tree_data, indent=2).encode(),
+        "create tree"
     )
 
     return {"msg": f"Repo {repo_name} creado"}
