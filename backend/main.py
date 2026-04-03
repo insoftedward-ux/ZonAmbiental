@@ -132,21 +132,19 @@ async def create_tree(
 # 🌳 LISTAR ÁRBOLES
 @app.get("/trees/{project}")
 def get_trees(project: str):
-
-    index = get_file(project, "index.json")
-
-    if not index:
+    url = f"https://api.github.com/repos/{GITHUB_USER}/{project}/contents"
+    headers = {
+        "Authorization": f"token {GITHUB_TOKEN}"
+    }
+    r = requests.get(url, headers=headers)
+    if r.status_code != 200:
+        print("ERROR LISTANDO:", r.text)
         return []
-
-    result = []
-
-    for vertice in index:
-        data = get_file(project, f"{vertice}/data.json")
-
-        if data:
-            result.append(data)
-
-    return result
+    data = r.json()
+    # 🔥 SOLO CARPETAS = ÁRBOLES
+    trees = [item["name"] for item in data if item["type"] == "dir"]
+    print("TREES:", trees)
+    return trees
 
 
 # 🌲 OBTENER UN ÁRBOL
