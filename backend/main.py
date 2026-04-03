@@ -201,50 +201,54 @@ def delete_tree(project: str, vertice: str):
 
 # Crear Ficha
 @app.get("/ficha/{project}/{vertice}", response_class=HTMLResponse)
-def ficha(project: str, vertice: str):
+async def ficha(project: str, vertice: str):
 
-    data = get_tree(project, vertice)
+    data = get_tree_data(project, vertice) 
+    images = data.get("images", [])
 
-    if not data:
-        return "<h1>No encontrado</h1>"
+    html_images = "".join([
+        f'<img src="{img}" style="width:100%;margin-bottom:10px;border-radius:10px;">'
+        for img in images
+    ])
 
-    html = f"""
+    return f"""
     <html>
     <head>
-        <title>Ficha Técnica</title>
+        <title>Ficha Árbol {vertice}</title>
         <style>
             body {{
                 font-family: Arial;
-                background: #f4f4f4;
                 padding: 20px;
+                background: #f5f5f5;
             }}
             .card {{
                 background: white;
                 padding: 20px;
-                border-radius: 10px;
+                border-radius: 15px;
+                box-shadow: 0 0 10px rgba(0,0,0,0.1);
             }}
-            img {{
-                width: 100%;
-                margin-top: 10px;
-                border-radius: 8px;
-            }}
+            h1 {{ color: #2e7d32; }}
         </style>
     </head>
     <body>
+
         <div class="card">
-            <h2>Árbol {data.get('vertice')}</h2>
+            <h1>{data.get("nombreComun")}</h1>
+            <h3><i>{data.get("nombreCientifico")}</i></h3>
 
-            <p><b>Nombre común:</b> {data.get('nombreComun')}</p>
-            <p><b>Nombre científico:</b> {data.get('nombreCientifico')}</p>
-            <p><b>Altura:</b> {data.get('altura')}</p>
-            <p><b>Copa:</b> {data.get('copa')}</p>
-            <p><b>DAP:</b> {data.get('dap')}</p>
+            <p><b>Altura:</b> {data.get("altura")} m</p>
+            <p><b>Copa:</b> {data.get("copa")} m</p>
+            <p><b>DAP:</b> {data.get("dap")} cm</p>
 
-            <h3>Imágenes</h3>
-            {''.join([f"<img src='{img}'/>" for img in data.get('images', [])])}
+            <p><b>Ubicación:</b><br>
+            {data.get("latitud")}, {data.get("longitud")}</p>
+
+            <hr>
+
+            {html_images}
+
         </div>
+
     </body>
     </html>
     """
-
-    return html
