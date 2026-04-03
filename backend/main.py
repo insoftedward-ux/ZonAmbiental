@@ -1,4 +1,5 @@
 from fastapi import FastAPI, UploadFile, File, Form
+from fastapi.responses import HTMLResponse
 from typing import List, Optional
 import json
 import os
@@ -165,16 +166,85 @@ def get_trees(project: str):
 # 🌲 OBTENER UN ÁRBOL
 @app.get("/tree/{project}/{vertice}")
 def get_tree(project: str, vertice: str):
+    import requests
+    raw_base = f"https://raw.githubusercontent.com/{GITHUB_USER}/{project}/main/{vertice}/"
+    headers = {
+        "Authorization": f"token {GITHUB_TOKEN}"
+    }
+    # 🔥 1. LEER JSON
+    json_url = raw_base + "data.json"
+    res = requests.get(json_url)
+    if res.status_code != 200:
+        return {}
+    data = res.json()
+    # 🔥 2. LISTAR ARCHIVOS (IMÁGENES)
+    api_url = f"https://api.github.com/repos/{GITHUB_USER}/{project}/contents/{vertice}"
+    files_res = requests.get(api_url, headers=headers)
+    images = []
+    if files_res.status_code == 200:
+        files = files_res.json()
 
-    data = get_file(project, f"{vertice}/data.json")
+        for file in files:
+            name = file["name"].lower()
 
-    if not data:
-        return {"error": "No encontrado"}
+            if name.endswith(".jpg") or name.endswith(".png"):
+                images.append(raw_base + file["name"])
+
+    data["images"] = images
 
     return data
-
 
 # 🗑️ ELIMINAR (pendiente)
 @app.delete("/tree/{project}/{vertice}")
 def delete_tree(project: str, vertice: str):
     return {"msg": "Eliminar aún no implementado"}
+
+# Crear Ficha
+@app.get("/ficha/{project}/{vertice}", response_class=HTMLResponse)
+def ficha(project: str, vertice: str):
+
+    data = get_tree(project, vertice)
+
+    if not data:
+        return "<h1>No encontrado</h1>"
+
+    html = f"""
+    <html>
+    <head>
+        <title>Ficha Técnica</title>
+        <style>
+            body {{
+                font-family: Arial;
+                background: #f4f4f4;
+                padding: 20px;
+            }}
+            .card {{
+                background: white;
+                padding: 20px;
+                border-radius: 10px;
+            }}
+            img {{
+                width: 100%;
+                margin-top: 10px;
+                border-radius: 8px;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <h2>Árbol {data.get('vertice')}</h2>
+
+            <p><b>Nombre común:</b> {data.get('nombreComun')}</p>
+            <p><b>Nombre científico:</b> {data.get('nombreCientifico')}</p>
+            <p><b>Altura:</b> {data.get('altura')}</p>
+            <p><b>Copa:</b> {data.get('copa')}</p>
+            <p><b>DAP:</b> {data.get('dap')}</p>
+
+            <h3>Imágenes</h3>
+            {''.join([f"<img src='{img}'/>" for img in data.get('images', [])])}
+        </div>
+    </body>
+    </html>
+    """
+
+    return html
