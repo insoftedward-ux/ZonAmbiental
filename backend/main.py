@@ -15,6 +15,7 @@ app = FastAPI()
 
 # 🔧 CONFIG
 GITHUB_USER = os.getenv("GITHUB_USER")
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 BRANCH = os.getenv("BRANCH", "main")
 
 
