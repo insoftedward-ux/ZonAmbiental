@@ -133,19 +133,33 @@ async def create_tree(
 # 🌳 LISTAR ÁRBOLES
 @app.get("/trees/{project}")
 def get_trees(project: str):
-    url = f"https://api.github.com/repos/{GITHUB_USER}/{project}/contents"
-    headers = {
-        "Authorization": f"token {GITHUB_TOKEN}"
-    }
-    r = requests.get(url, headers=headers)
-    if r.status_code != 200:
-        print("ERROR LISTANDO:", r.text)
+    import requests
+    try:
+        url = f"https://api.github.com/repos/{GITHUB_USER}/{project}/contents"
+        headers = {
+            "Authorization": f"token {GITHUB_TOKEN}"
+        }
+        response = requests.get(url, headers=headers)
+        print("STATUS:", response.status_code)
+        print("RESPONSE:", response.text)
+        if response.status_code != 200:
+            return []
+        data = response.json()
+        # 🔥 VALIDACIÓN IMPORTANTE
+        if not isinstance(data, list):
+            return []
+        # 🔥 SOLO CARPETAS
+        trees = [
+            item["name"]
+            for item in data
+            if item.get("type") == "dir"
+        ]
+        print("TREES:", trees)
+        return trees
+
+    except Exception as e:
+        print("ERROR /trees:", str(e))
         return []
-    data = r.json()
-    # 🔥 SOLO CARPETAS = ÁRBOLES
-    trees = [item["name"] for item in data if item["type"] == "dir"]
-    print("TREES:", trees)
-    return trees
 
 
 # 🌲 OBTENER UN ÁRBOL
