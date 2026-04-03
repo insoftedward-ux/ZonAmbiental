@@ -203,7 +203,7 @@ def delete_tree(project: str, vertice: str):
 @app.get("/ficha/{project}/{vertice}", response_class=HTMLResponse)
 async def ficha(project: str, vertice: str):
 
-    data = get_tree_data(project, vertice) 
+    data = get_tree(project, vertice) 
     images = data.get("images", [])
 
     html_images = "".join([
