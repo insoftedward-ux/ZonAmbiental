@@ -308,7 +308,7 @@ body {{
 
     <!-- HEADER -->
     <div class="header">
-        <img src="https://raw.githubusercontent.com/insoftedward-ux/ZonAmbiental/backend/logo.png">
+        <img src="https://raw.githubusercontent.com/insoftedward-ux/ZonAmbiental/backend/logo.jpg">
         <div class="title">FICHA TÉCNICA DE ARBOLADO</div>
     </div>
 
