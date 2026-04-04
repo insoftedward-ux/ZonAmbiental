@@ -203,52 +203,145 @@ def delete_tree(project: str, vertice: str):
 @app.get("/ficha/{project}/{vertice}", response_class=HTMLResponse)
 async def ficha(project: str, vertice: str):
 
-    data = get_tree(project, vertice) 
+    data = get_tree(project, vertice)
     images = data.get("images", [])
 
+    # 🖼️ GALERÍA
     html_images = "".join([
-        f'<img src="{img}" style="width:100%;margin-bottom:10px;border-radius:10px;">'
+        f'<img src="{img}" style="width:100%;margin-top:10px;border-radius:8px;">'
         for img in images
     ])
 
-    return f"""
-    <html>
-    <head>
-        <title>Ficha Árbol {vertice}</title>
-        <style>
-            body {{
-                font-family: Arial;
-                padding: 20px;
-                background: #f5f5f5;
-            }}
-            .card {{
-                background: white;
-                padding: 20px;
-                border-radius: 15px;
-                box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            }}
-            h1 {{ color: #2e7d32; }}
-        </style>
-    </head>
-    <body>
+    # 📍 MAPA (SIN API)
+    lat = data.get("latitud", 0)
+    lng = data.get("longitud", 0)
 
-        <div class="card">
-            <h1>{data.get("nombreComun")}</h1>
-            <h3><i>{data.get("nombreCientifico")}</i></h3>
-
-            <p><b>Altura:</b> {data.get("altura")} m</p>
-            <p><b>Copa:</b> {data.get("copa")} m</p>
-            <p><b>DAP:</b> {data.get("dap")} cm</p>
-
-            <p><b>Ubicación:</b><br>
-            {data.get("latitud")}, {data.get("longitud")}</p>
-
-            <hr>
-
-            {html_images}
-
-        </div>
-
-    </body>
-    </html>
+    mapa = f"""
+    <iframe
+        src="https://maps.google.com/maps?q={lat},{lng}&z=18&output=embed"
+        width="100%" height="300" style="border:0;margin-top:10px;">
+    </iframe>
     """
+
+    return f"""
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Ficha Técnica de Arbolado</title>
+
+<style>
+body {{
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background: #f0f0f0;
+}}
+
+.container {{
+    background: white;
+    max-width: 900px;
+    margin: 20px auto;
+    padding: 20px;
+    border: 3px solid #2e7d32;
+}}
+
+/* HEADER */
+.header {{
+    display: flex;
+    align-items: center;
+    border-bottom: 3px solid #2e7d32;
+    padding-bottom: 10px;
+}}
+
+.header img {{
+    height: 70px;
+    margin-right: 15px;
+}}
+
+.title {{
+    font-size: 22px;
+    font-weight: bold;
+    color: #2e7d32;
+}}
+
+/* SECCIONES */
+.section {{
+    margin-top: 20px;
+}}
+
+.label {{
+    font-weight: bold;
+}}
+
+.data p {{
+    margin: 5px 0;
+}}
+
+.gallery img {{
+    width: 100%;
+    margin-top: 10px;
+    border-radius: 6px;
+}}
+
+.btn {{
+    margin-top: 25px;
+    padding: 12px;
+    background: #2e7d32;
+    color: white;
+    text-align: center;
+    cursor: pointer;
+    font-weight: bold;
+}}
+
+/* PRINT */
+@media print {{
+    .btn {{ display: none; }}
+    body {{ background: white; }}
+    .container {{ border: none; margin: 0; }}
+}}
+</style>
+
+</head>
+<body>
+
+<div class="container">
+
+    <!-- HEADER -->
+    <div class="header">
+        <img src="https://raw.githubusercontent.com/TU_USUARIO/TU_REPO/main/logo.png">
+        <div class="title">FICHA TÉCNICA DE ARBOLADO</div>
+    </div>
+
+    <!-- DATOS -->
+    <div class="section data">
+        <p><span class="label">Proyecto:</span> {project}</p>
+        <p><span class="label">Vértice:</span> {vertice}</p>
+        <p><span class="label">Nombre común:</span> {data.get("nombreComun","")}</p>
+        <p><span class="label">Nombre científico:</span> <i>{data.get("nombreCientifico","")}</i></p>
+        <p><span class="label">Altura:</span> {data.get("altura","")} m</p>
+        <p><span class="label">DAP:</span> {data.get("dap","")} cm</p>
+        <p><span class="label">Copa:</span> {data.get("copa","")} m</p>
+    </div>
+
+    <!-- MAPA -->
+    <div class="section">
+        <div class="label">Ubicación:</div>
+        {mapa}
+    </div>
+
+    <!-- GALERÍA -->
+    <div class="section">
+        <div class="label">Galería fotográfica:</div>
+        {html_images}
+    </div>
+
+    <!-- PDF -->
+    <div class="btn" onclick="window.print()">
+        Descargar / Imprimir PDF
+    </div>
+
+</div>
+
+</body>
+</html>
+"""
